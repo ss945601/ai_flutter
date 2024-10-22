@@ -32,6 +32,8 @@ class _MainAppState extends State<MainApp> {
 
   var chatMsg = "Hi";
   List<Widget> contents = [];
+  bool displayRealtimeAI = false;
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -39,27 +41,60 @@ class _MainAppState extends State<MainApp> {
       home: Scaffold(
         body: Padding(
           padding: const EdgeInsets.all(8.0),
-          child: Column(
+          child: Stack(
             children: [
-              Expanded(
-                  child: SingleChildScrollView(
-                child: Padding(
-                  padding: const EdgeInsets.all(22.0),
-                  child: Column(
-                    children: contents,
+              Column(
+                children: [
+                  Expanded(
+                      child: SingleChildScrollView(
+                    child: Padding(
+                      padding: const EdgeInsets.all(22.0),
+                      child: Column(
+                        children: contents,
+                      ),
+                    ),
+                  )),
+                  MessageBar(
+                    onSend: (_) {
+                      _addMsg(_);
+                      ChatTool.instance.ask(_);
+                    },
+                    actions: const [
+                      Padding(
+                          padding: EdgeInsets.only(left: 8, right: 8),
+                          child: Icon(Icons.chat)),
+                    ],
+                  )
+                ],
+              ),
+              Positioned(
+                child: Align(
+                  alignment: Alignment.center,
+                  child: Visibility(
+                    visible: displayRealtimeAI,
+                    child: ValueListenableBuilder(
+                      builder: (context, _, __) {
+                        return Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(30),
+                              boxShadow: const [
+                                BoxShadow(
+                                  color: Colors.black12,
+                                  spreadRadius: 3,
+                                )
+                              ],
+                            ),
+                            padding: EdgeInsets.all(20.0),
+                            width: MediaQuery.of(context).size.width / 1.5,
+                            height: MediaQuery.of(context).size.height / 1.5,
+                            child:
+                                Markdown(data: ChatTool.instance.realtime.value));
+                      },
+                      valueListenable: ChatTool.instance.realtime,
+                    ),
                   ),
                 ),
-              )),
-              MessageBar(
-                onSend: (_) {
-                  _addMsg(_);
-                  ChatTool.instance.ask(_);
-                },
-                actions: const [
-                  Padding(
-                      padding: EdgeInsets.only(left: 8, right: 8),
-                      child: Icon(Icons.chat)),
-                ],
               )
             ],
           ),
@@ -69,15 +104,15 @@ class _MainAppState extends State<MainApp> {
   }
 
   void _addMsg(String msg, {bool isSender = true}) {
-    var step = MediaQuery.of(context).size.width /2 / 14;
+    var step = MediaQuery.of(context).size.width / 2 / 14;
     var h = ((msg.length / step) + 2) * 14;
-
     setState(() {
+      displayRealtimeAI = isSender;
       contents.add(
         isSender
             ? Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: BubbleNormal(
+                padding: const EdgeInsets.all(8.0),
+                child: BubbleNormal(
                   text: msg,
                   isSender: isSender,
                   color: isSender ? const Color(0xFF1B97F3) : Colors.deepPurple,
@@ -87,29 +122,18 @@ class _MainAppState extends State<MainApp> {
                     color: Colors.white,
                   ),
                   onDoubleTap: () async {
-                    Clipboard.setData(ClipboardData(text: msg)).then(
-                      (value) {
-                        Fluttertoast.showToast(
-                            msg: "Copy to clipboard",
-                            toastLength: Toast.LENGTH_SHORT,
-                            gravity: ToastGravity.CENTER,
-                            timeInSecForIosWeb: 1,
-                            backgroundColor: Colors.red,
-                            textColor: Colors.white,
-                            fontSize: 16.0);
-                      },
-                    );
+                    Clipboard.setData(ClipboardData(text: msg));
                   },
                 ),
-            )
+              )
             : Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: ChatBubble(
+                padding: const EdgeInsets.all(8.0),
+                child: ChatBubble(
                   clipper: ChatBubbleClipper1(type: BubbleType.receiverBubble),
                   backGroundColor: Color(0xffE7E7ED),
                   margin: EdgeInsets.only(top: 20),
                   child: SizedBox(
-                    width: MediaQuery.of(context).size.width/2,
+                    width: MediaQuery.of(context).size.width / 2,
                     height: h < 150 ? 150 : h,
                     child: Markdown(
                       selectable: true,
@@ -124,7 +148,7 @@ class _MainAppState extends State<MainApp> {
                     ),
                   ),
                 ),
-            ),
+              ),
       );
     });
   }
