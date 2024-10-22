@@ -1,3 +1,4 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:fllama/fllama.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
@@ -12,12 +13,20 @@ class ChatTool {
   final ValueNotifier<String> _realtime = ValueNotifier("");
   ValueNotifier<String> get realtime => _realtime;
   List<Message> messages = [];
-  final Map<String, String> modelPath = {
-    "Normal Model (Slow)":
-        "/Users/steven.chang/projects/chat_ai/lib/utils/ai_models/Meta-Llama-3.1-8B-Instruct-Q4_K_M-take2.gguf",
-    "Mobile Lite Model (Fast)":
-        "/Users/steven.chang/projects/chat_ai/lib/utils/ai_models/Llama-3.2-1B-Instruct-Q4_K_M.gguf",
-  };
+  final Map<String, String> modelPath = {};
+
+  Future<void> loadModelFolder() async {
+    FilePickerResult? result = await FilePicker.platform.pickFiles(
+      allowMultiple: true,
+      type: FileType.custom,
+      allowedExtensions: ['gguf'],
+    );
+    result?.files.forEach(
+      (element) {
+        modelPath[element.name] = element.path!;
+      },
+    );
+  }
 
   void ask(String prompt, String path) async {
     messages.add(Message(Role.user, prompt));

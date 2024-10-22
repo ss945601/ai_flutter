@@ -33,7 +33,7 @@ class _MainAppState extends State<MainApp> {
   var chatMsg = "Hi";
   List<Widget> contents = [];
   bool displayRealtimeAI = false;
-  String _selectedModel = ChatTool.instance.modelPath.keys.first;
+  String _selectedModel = "";
 
   @override
   Widget build(BuildContext context) {
@@ -42,25 +42,43 @@ class _MainAppState extends State<MainApp> {
       builder: EasyLoading.init(),
       home: Scaffold(
         appBar: AppBar(
-          title: DropdownButton<String>(
-              hint: Text('Select a model'),
-              value: _selectedModel,
-              items: ChatTool.instance.modelPath.keys.map((String key) {
-                return DropdownMenuItem<String>(
-                  value: key,
-                  child: Text(key),
-                );
-              }).toList(),
-              onChanged: (String? newValue) {
-                setState(() {
-                  _selectedModel = newValue!;
-                });
-                // Optionally, print the path of the selected model
-                if (newValue != null) {
-                  print(
-                      'Selected Model Path: ${ChatTool.instance.modelPath[_selectedModel]}');
-                }
-              }),
+          title: Stack(
+            children: [
+              IconButton(
+                  onPressed: () {
+                    ChatTool.instance.loadModelFolder().then(
+                      (value) {
+                        setState(() {
+                          _selectedModel =
+                              ChatTool.instance.modelPath.keys.first;
+                        });
+                      },
+                    );
+                  },
+                  icon: IntrinsicWidth( child: Row(children: [Icon(Icons.computer),Text("Load Models")],))),
+              Center(
+                child: DropdownButton<String>(
+                    hint: Text('Select a model'),
+                    value: _selectedModel,
+                    items: ChatTool.instance.modelPath.keys.map((String key) {
+                      return DropdownMenuItem<String>(
+                        value: key,
+                        child: Text(key),
+                      );
+                    }).toList(),
+                    onChanged: (String? newValue) {
+                      setState(() {
+                        _selectedModel = newValue!;
+                      });
+                      // Optionally, print the path of the selected model
+                      if (newValue != null) {
+                        print(
+                            'Selected Model Path: ${ChatTool.instance.modelPath[_selectedModel]}');
+                      }
+                    }),
+              ),
+            ],
+          ),
         ),
         body: Padding(
           padding: const EdgeInsets.all(8.0),
@@ -80,7 +98,8 @@ class _MainAppState extends State<MainApp> {
                   MessageBar(
                     onSend: (_) {
                       _addMsg(_);
-                      ChatTool.instance.ask(_, ChatTool.instance.modelPath[_selectedModel]!);
+                      ChatTool.instance
+                          .ask(_, ChatTool.instance.modelPath[_selectedModel]!);
                     },
                     actions: const [
                       Padding(
