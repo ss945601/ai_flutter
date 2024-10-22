@@ -12,20 +12,20 @@ class ChatTool {
   final ValueNotifier<String> _realtime = ValueNotifier("");
   ValueNotifier<String> get realtime => _realtime;
   List<Message> messages = [];
+  final Map<String, String> modelPath = {
+    "Normal Model (Slow)":
+        "/Users/steven.chang/projects/chat_ai/lib/utils/ai_models/Meta-Llama-3.1-8B-Instruct-Q4_K_M-take2.gguf",
+    "Mobile Lite Model (Fast)":
+        "/Users/steven.chang/projects/chat_ai/lib/utils/ai_models/Llama-3.2-1B-Instruct-Q4_K_M.gguf",
+  };
 
-  void ask(String prompt) async {
-    if (messages.length > 1) {
-      messages.removeAt(0);
-    }
+  void ask(String prompt, String path) async {
     messages.add(Message(Role.user, prompt));
-    final request = OpenAiRequest(
+    var request = OpenAiRequest(
       maxTokens: 2048,
       messages: messages,
       numGpuLayers: 256,
-      /* this seems to have no adverse effects in environments w/o GPU support, ex. Android and web */
-      //modelPath:
-      //    "/Users/steven.chang/projects/chat_ai/lib/utils/ai_models/Meta-Llama-3.1-8B-Instruct-Q4_K_M-take2.gguf",
-      modelPath: "/Users/steven.chang/projects/chat_ai/lib/utils/ai_models/Llama-3.2-1B-Instruct-Q4_K_M.gguf",
+      modelPath: path,
       frequencyPenalty: 0.0,
       // Don't use below 1.1, LLMs without a repeat penalty
       // will repeat the same token.
@@ -48,11 +48,12 @@ class ChatTool {
     realtime.value = "";
     await fllamaChat(request, (response, done) {
       realtime.value = response;
-
+      if (EasyLoading.isShow) {
+        EasyLoading.dismiss();
+      }
       if (done) {
         _latestResult.value = response;
       }
     });
-    EasyLoading.dismiss();
   }
 }

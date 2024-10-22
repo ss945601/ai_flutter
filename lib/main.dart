@@ -33,12 +33,35 @@ class _MainAppState extends State<MainApp> {
   var chatMsg = "Hi";
   List<Widget> contents = [];
   bool displayRealtimeAI = false;
+  String _selectedModel = ChatTool.instance.modelPath.keys.first;
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       builder: EasyLoading.init(),
       home: Scaffold(
+        appBar: AppBar(
+          title: DropdownButton<String>(
+              hint: Text('Select a model'),
+              value: _selectedModel,
+              items: ChatTool.instance.modelPath.keys.map((String key) {
+                return DropdownMenuItem<String>(
+                  value: key,
+                  child: Text(key),
+                );
+              }).toList(),
+              onChanged: (String? newValue) {
+                setState(() {
+                  _selectedModel = newValue!;
+                });
+                // Optionally, print the path of the selected model
+                if (newValue != null) {
+                  print(
+                      'Selected Model Path: ${ChatTool.instance.modelPath[_selectedModel]}');
+                }
+              }),
+        ),
         body: Padding(
           padding: const EdgeInsets.all(8.0),
           child: Stack(
@@ -57,7 +80,7 @@ class _MainAppState extends State<MainApp> {
                   MessageBar(
                     onSend: (_) {
                       _addMsg(_);
-                      ChatTool.instance.ask(_);
+                      ChatTool.instance.ask(_, ChatTool.instance.modelPath[_selectedModel]!);
                     },
                     actions: const [
                       Padding(
@@ -88,8 +111,8 @@ class _MainAppState extends State<MainApp> {
                             padding: EdgeInsets.all(20.0),
                             width: MediaQuery.of(context).size.width / 1.5,
                             height: MediaQuery.of(context).size.height / 1.5,
-                            child:
-                                Markdown(data: ChatTool.instance.realtime.value));
+                            child: Markdown(
+                                data: ChatTool.instance.realtime.value));
                       },
                       valueListenable: ChatTool.instance.realtime,
                     ),
