@@ -34,50 +34,82 @@ class _MainAppState extends State<MainApp> {
   List<Widget> contents = [];
   bool displayRealtimeAI = false;
   String _selectedModel = "";
+  final _messangerKey = GlobalKey<ScaffoldMessengerState>();
+  void _showToast(String message) {
+    _messangerKey.currentState!
+        .showSnackBar(SnackBar(content: Text(message), duration: const Duration(seconds: 1),));
+  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      scaffoldMessengerKey: _messangerKey,
       debugShowCheckedModeBanner: false,
       builder: EasyLoading.init(),
       home: Scaffold(
         appBar: AppBar(
-          title: Stack(
-            children: [
-              IconButton(
-                  onPressed: () {
-                    ChatTool.instance.loadModelFolder().then(
-                      (value) {
+          backgroundColor: Colors.blue.withAlpha(30),
+          title: Padding(
+            padding: const EdgeInsets.only(top: 18.0, bottom: 8),
+            child: Stack(
+              children: [
+                IconButton(
+                    onPressed: () {
+                      ChatTool.instance.loadModelFolder().then(
+                        (value) {
+                          setState(() {
+                            _selectedModel =
+                                ChatTool.instance.modelPath.keys.first;
+                          });
+                        },
+                      );
+                    },
+                    icon: IntrinsicWidth(
+                        child: Row(
+                      children: [Icon(Icons.computer), Text("Load Models")],
+                    ))),
+                Center(
+                  child: DropdownButton<String>(
+                      hint: Text('Select a model'),
+                      underline: SizedBox.shrink(),
+                      focusColor: Colors.transparent,
+                      value: _selectedModel,
+                      alignment: Alignment.center,
+                      style: TextStyle(
+                          fontSize: 16, color: Colors.black.withAlpha(200)),
+                      items: ChatTool.instance.modelPath.keys.map((String key) {
+                        return DropdownMenuItem<String>(
+                          value: key,
+                          child: Text(key),
+                        );
+                      }).toList(),
+                      onChanged: (String? newValue) {
                         setState(() {
-                          _selectedModel =
-                              ChatTool.instance.modelPath.keys.first;
+                          _selectedModel = newValue!;
+                        });
+                        // Optionally, print the path of the selected model
+                        if (newValue != null) {
+                          print(
+                              'Selected Model Path: ${ChatTool.instance.modelPath[_selectedModel]}');
+                        }
+                      }),
+                ),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: IconButton(
+                      onPressed: () {
+                        setState(() {
+                          contents.clear();
+                          ChatTool.instance.messages = [];
                         });
                       },
-                    );
-                  },
-                  icon: IntrinsicWidth( child: Row(children: [Icon(Icons.computer),Text("Load Models")],))),
-              Center(
-                child: DropdownButton<String>(
-                    hint: Text('Select a model'),
-                    value: _selectedModel,
-                    items: ChatTool.instance.modelPath.keys.map((String key) {
-                      return DropdownMenuItem<String>(
-                        value: key,
-                        child: Text(key),
-                      );
-                    }).toList(),
-                    onChanged: (String? newValue) {
-                      setState(() {
-                        _selectedModel = newValue!;
-                      });
-                      // Optionally, print the path of the selected model
-                      if (newValue != null) {
-                        print(
-                            'Selected Model Path: ${ChatTool.instance.modelPath[_selectedModel]}');
-                      }
-                    }),
-              ),
-            ],
+                      icon: const IntrinsicWidth(
+                          child: Row(
+                        children: [Icon(Icons.change_circle), Text("reset")],
+                      ))),
+                ),
+              ],
+            ),
           ),
         ),
         body: Padding(
@@ -97,9 +129,11 @@ class _MainAppState extends State<MainApp> {
                   )),
                   MessageBar(
                     onSend: (_) {
-                      _addMsg(_);
-                      ChatTool.instance
-                          .ask(_, ChatTool.instance.modelPath[_selectedModel]!);
+                      if (ChatTool.instance.modelPath.isNotEmpty) {
+                        _addMsg(_);
+                        ChatTool.instance.ask(
+                            _, ChatTool.instance.modelPath[_selectedModel]!);
+                      }
                     },
                     actions: const [
                       Padding(
@@ -148,6 +182,7 @@ class _MainAppState extends State<MainApp> {
   void _addMsg(String msg, {bool isSender = true}) {
     var step = MediaQuery.of(context).size.width / 2 / 14;
     var h = ((msg.length / step) + 2) * 14;
+
     setState(() {
       displayRealtimeAI = isSender;
       contents.add(
@@ -165,6 +200,7 @@ class _MainAppState extends State<MainApp> {
                   ),
                   onDoubleTap: () async {
                     Clipboard.setData(ClipboardData(text: msg));
+                    _showToast("copy to clipboard");
                   },
                 ),
               )
@@ -177,15 +213,23 @@ class _MainAppState extends State<MainApp> {
                   child: SizedBox(
                     width: MediaQuery.of(context).size.width / 2,
                     height: h < 150 ? 150 : h,
-                    child: Markdown(
-                      selectable: true,
-                      data: msg,
-                      extensionSet: md.ExtensionSet(
-                        md.ExtensionSet.gitHubFlavored.blockSyntaxes,
-                        <md.InlineSyntax>[
-                          md.EmojiSyntax(),
-                          ...md.ExtensionSet.gitHubFlavored.inlineSyntaxes
-                        ],
+                    child: GestureDetector(
+                      onDoubleTap: () {
+                        Clipboard.setData(ClipboardData(
+                            text: msg));
+                        _showToast("copy to clipboard");
+                      },
+                      child: Markdown(
+                        selectable: true,
+                        softLineBreak: true,
+                        data: msg,
+                        extensionSet: md.ExtensionSet(
+                          md.ExtensionSet.gitHubFlavored.blockSyntaxes,
+                          <md.InlineSyntax>[
+                            md.EmojiSyntax(),
+                            ...md.ExtensionSet.gitHubFlavored.inlineSyntaxes
+                          ],
+                        ),
                       ),
                     ),
                   ),

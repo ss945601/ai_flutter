@@ -29,6 +29,7 @@ class ChatTool {
   }
 
   void ask(String prompt, String path) async {
+    EasyLoading.show(status: 'loading...');
     messages.add(Message(Role.user, prompt));
     var request = OpenAiRequest(
       maxTokens: 2048,
@@ -53,16 +54,14 @@ class ChatTool {
         // print('[llama.cpp] $log');
       },
     );
-    EasyLoading.show(status: 'loading...');
     realtime.value = "";
     await fllamaChat(request, (response, done) {
       realtime.value = response;
-      if (EasyLoading.isShow) {
-        EasyLoading.dismiss();
-      }
       if (done) {
+        messages.add(Message(Role.assistant, response));
         _latestResult.value = response;
       }
     });
+    EasyLoading.dismiss();
   }
 }
